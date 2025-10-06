@@ -5,7 +5,7 @@ import logging
 import math
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from browser_use.browser.profile import ViewportSize
 
@@ -53,6 +53,8 @@ class VideoRecorderService:
 		self._writer: Optional['Format.Writer'] = None
 		self._is_active = False
 		self.padded_size = _get_padded_size(self.size)
+		self._last_frame: Optional['np.ndarray'] = None  # type: ignore[name-defined]
+		self._last_timestamp: Optional[float] = None
 
 	def start(self) -> None:
 		"""
@@ -84,7 +86,7 @@ class VideoRecorderService:
 			logger.error(f'Failed to initialize video writer: {e}')
 			self._is_active = False
 
-	def add_frame(self, frame_data_b64: str) -> None:
+	def add_frame(self, frame_data_b64: str, metadata: Optional[Dict[str, Any]] = None) -> None:
 		"""
 		Decodes a base64-encoded PNG frame, resizes it, pads it to be codec-compatible,
 		and appends it to the video.
@@ -139,7 +141,34 @@ class VideoRecorderService:
 			# Convert the raw output bytes to a numpy array with the padded dimensions
 			img_array = np.frombuffer(out, dtype=np.uint8).reshape((self.padded_size['height'], self.padded_size['width'], 3))
 
-			self._writer.append_data(img_array)
+			frame_timestamp = None
+			if metadata and isinstance(metadata, dict):
+				frame_timestamp = metadata.get('timestamp')
+				try:
+					if frame_timestamp is not None:
+						frame_timestamp = float(frame_timestamp)
+				except (TypeError, ValueError):
+					frame_timestamp = None
+
+			if self._last_frame is None:
+				self._last_frame = img_array
+				self._last_timestamp = frame_timestamp
+				return
+
+			if frame_timestamp is not None and self._last_timestamp is not None:
+				delta = max(frame_timestamp - self._last_timestamp, 0.0)
+			else:
+				delta = 1.0 / float(self.framerate) if self.framerate else 0.0333
+
+			frames_needed = max(1, int(round(delta * float(self.framerate)))) if self.framerate else 1
+
+			for _ in range(frames_needed):
+				self._writer.append_data(self._last_frame)
+
+			self._last_frame = img_array
+			self._last_timestamp = frame_timestamp if frame_timestamp is not None else (
+				(self._last_timestamp or 0.0) + (frames_needed / float(self.framerate)) if self.framerate else None
+			)
 		except Exception as e:
 			logger.warning(f'Could not process and add video frame: {e}')
 
@@ -153,10 +182,20 @@ class VideoRecorderService:
 			return
 
 		try:
+			if self._last_frame is not None:
+				# Ensure the final frame is written at least once
+				try:
+					self._writer.append_data(self._last_frame)
+				except Exception as e:
+					logger.debug(f'Unable to append final frame: {e}')
 			self._writer.close()
+			self._last_frame = None
+			self._last_timestamp = None
 			logger.info(f'📹 Video recording saved successfully to: {self.output_path}')
 		except Exception as e:
 			logger.error(f'Failed to finalize and save video: {e}')
 		finally:
+			self._last_frame = None
+			self._last_timestamp = None
 			self._is_active = False
 			self._writer = None
