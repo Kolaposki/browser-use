@@ -99,7 +99,15 @@ class RecordingWatchdog(BaseWatchdog):
 		"""
 		if not self._recorder:
 			return
-		self._recorder.add_frame(event['data'])
+		metadata = None
+		try:
+			if isinstance(event, dict):
+				metadata = event.get('metadata')
+			else:
+				metadata = getattr(event, 'metadata', None)
+		except Exception:
+			metadata = None
+		self._recorder.add_frame(event['data'], metadata=metadata)
 		asyncio.create_task(self._ack_screencast_frame(event, session_id))
 
 	async def _ack_screencast_frame(self, event: ScreencastFrameEvent, session_id: str | None) -> None:
