@@ -165,28 +165,36 @@ class AboutBlankWatchdog(BaseWatchdog):
 					loadingOverlay.style.left = '0';
 					loadingOverlay.style.width = '100vw';
 					loadingOverlay.style.height = '100vh';
-					loadingOverlay.style.background = '#000';
+					loadingOverlay.style.background = '#050208';
 					loadingOverlay.style.zIndex = '99999';
 					loadingOverlay.style.overflow = 'hidden';
 
-					// Create the image element
-					const img = document.createElement('img');
-					img.src = 'https://cf.browser-use.com/logo.svg';
-					img.alt = 'Browser-Use';
-					img.style.width = '200px';
-					img.style.height = 'auto';
-					img.style.position = 'absolute';
-					img.style.left = '0px';
-					img.style.top = '0px';
-					img.style.zIndex = '2';
-					img.style.opacity = '0.8';
+					// Create the text element
+					const textTile = document.createElement('div');
+					textTile.textContent = 'Zélie initiating...';
+					textTile.style.position = 'absolute';
+					textTile.style.left = '0px';
+					textTile.style.top = '0px';
+					textTile.style.padding = '16px 28px';
+					textTile.style.borderRadius = '20px';
+					textTile.style.background = 'linear-gradient(135deg, rgba(133,92,255,0.95), rgba(255,118,171,0.95))';
+					textTile.style.color = '#fff';
+					textTile.style.fontFamily = '"Inter", "SF Pro Display", "Helvetica Neue", sans-serif';
+					textTile.style.fontSize = '24px';
+					textTile.style.fontWeight = '600';
+					textTile.style.letterSpacing = '0.04em';
+					textTile.style.boxShadow = '0 12px 32px rgba(82,48,255,0.35)';
+					textTile.style.textTransform = 'uppercase';
+					textTile.style.opacity = '0.92';
+					textTile.style.userSelect = 'none';
+					textTile.style.pointerEvents = 'none';
 
-					loadingOverlay.appendChild(img);
+					loadingOverlay.appendChild(textTile);
 					document.body.appendChild(loadingOverlay);
 
 					// DVD screensaver bounce logic
-					let x = Math.random() * (window.innerWidth - 300);
-					let y = Math.random() * (window.innerHeight - 300);
+					let x = Math.random() * (window.innerWidth - 320);
+					let y = Math.random() * (window.innerHeight - 160);
 					let dx = 1.2 + Math.random() * 0.4; // px per frame
 					let dy = 1.2 + Math.random() * 0.4;
 					// Randomize direction
@@ -194,28 +202,28 @@ class AboutBlankWatchdog(BaseWatchdog):
 					if (Math.random() > 0.5) dy = -dy;
 
 					function animate() {{
-						const imgWidth = img.offsetWidth || 300;
-						const imgHeight = img.offsetHeight || 300;
+						const tileWidth = textTile.offsetWidth || 280;
+						const tileHeight = textTile.offsetHeight || 80;
 						x += dx;
 						y += dy;
 
 						if (x <= 0) {{
 							x = 0;
 							dx = Math.abs(dx);
-						}} else if (x + imgWidth >= window.innerWidth) {{
-							x = window.innerWidth - imgWidth;
+						}} else if (x + tileWidth >= window.innerWidth) {{
+							x = window.innerWidth - tileWidth;
 							dx = -Math.abs(dx);
 						}}
 						if (y <= 0) {{
 							y = 0;
 							dy = Math.abs(dy);
-						}} else if (y + imgHeight >= window.innerHeight) {{
-							y = window.innerHeight - imgHeight;
+						}} else if (y + tileHeight >= window.innerHeight) {{
+							y = window.innerHeight - tileHeight;
 							dy = -Math.abs(dy);
 						}}
 
-						img.style.left = `${{x}}px`;
-						img.style.top = `${{y}}px`;
+						textTile.style.left = `${{x}}px`;
+						textTile.style.top = `${{y}}px`;
 
 						requestAnimationFrame(animate);
 					}}
@@ -223,19 +231,15 @@ class AboutBlankWatchdog(BaseWatchdog):
 
 					// Responsive: update bounds on resize
 					window.addEventListener('resize', () => {{
-						x = Math.min(x, window.innerWidth - img.offsetWidth);
-						y = Math.min(y, window.innerHeight - img.offsetHeight);
+						x = Math.min(x, Math.max(0, window.innerWidth - textTile.offsetWidth));
+						y = Math.min(y, Math.max(0, window.innerHeight - textTile.offsetHeight));
 					}});
 
 					// Add a little CSS for smoothness
 					const style = document.createElement('style');
 					style.textContent = `
 						#pretty-loading-animation {{
-							/*backdrop-filter: blur(2px) brightness(0.9);*/
-						}}
-						#pretty-loading-animation img {{
-							user-select: none;
-							pointer-events: none;
+							background: radial-gradient(circle at center, rgba(10,6,18,0.9), rgba(3,2,8,1));
 						}}
 					`;
 					document.head.appendChild(style);
